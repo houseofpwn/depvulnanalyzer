@@ -1,16 +1,16 @@
 import json
 import sys
-
+from colorama import Fore, Back, Style
 
 def loaddeps(depfile):
-    print("Loading dependencies...")
+    print(Fore.WHITE + "Loading dependencies...")
     with open(depfile, "r") as f:
         deps = json.load(f)
         f.close()
     return deps
 
 def loadnotfixed(notfixedfile):
-    print("Loading non-fixed dependencies...")
+    print(Fore.WHITE + "Loading non-fixed dependencies...")
     with open(notfixedfile, "r") as f:
         notfixed = json.load(f)
         f.close()
@@ -21,10 +21,10 @@ def isdepvulnerable(name, vuln, deps):
         #print(f'Checking for {name} in {dep}')
         deplist = deps[dep]
         if name in deplist:
-            print(name)
+            print(Fore.RED + name)
 
 def checkvulns(deps, notfixed):
-    print("Checking vulnerabilities...")
+    print(Fore.WHITE + "Checking vulnerabilities...")
     for cve, libobjs in notfixed.items():
         for item in libobjs:
             if type(libobjs[item]) is dict:
@@ -38,7 +38,7 @@ def main():
     deps = loaddeps(depfile)
     notfixed = loadnotfixed(notfixedfile)
     checkvulns(deps, notfixed)
-    print("Done...")
+    print(Fore.WHITE + "Done...")
 
 
 if __name__ == "__main__":
