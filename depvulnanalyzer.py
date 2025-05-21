@@ -95,15 +95,15 @@ def checkdepfixed(name, vuln, deps):
             if failed:
                 if lastname !=name:
                     print(Fore.WHITE + f'Library {name}')
-                print(Fore.WHITE + f'\tModule {dep} - [ {low} - {high} ] (', Fore.RED + f'{current}', Fore.WHITE + ')')
+                print(Fore.WHITE + f'\tModule ' + Fore.LIGHTWHITE_EX + f'{dep} - ' + Fore.YELLOW + f'[ {low} - {high} ] ' + Fore.WHITE + f'(', Fore.RED + f'{current}', Fore.WHITE + ')')
             else:
                 if lastname !=name:
                     print(Fore.WHITE + f'Library {name}')
-                print(Fore.WHITE + f'\tModule {dep} - [ {low} - {high} ] (', Fore.GREEN + f'{current}', Fore.WHITE + ')')
+                print(Fore.WHITE + f'\tModule ' + Fore.LIGHTWHITE_EX + f'{dep} - ' + Fore.YELLOW + f'[ {low} - {high} ] ' + Fore.WHITE + f'(', Fore.GREEN + f'{current}', Fore.WHITE + ')')
             lastname = name
 
 def checkunfixedvulns(deps, notfixed):
-    print(Fore.BLUE + "Checking vulnerabilities...")
+    print(Fore.BLUE + "Checking not-fixed vulnerabilities...")
     for cve, libobjs in notfixed.items():
         for item in libobjs:
             if type(libobjs[item]) is dict:
@@ -111,7 +111,7 @@ def checkunfixedvulns(deps, notfixed):
         #print(f'{cve} ')
 
 def checkfixedvulns(deps, fixed):
-    print(Fore.YELLOW + "Checking fixed vulnerabilities...")
+    print(Fore.BLUE + "Checking fixed vulnerabilities...")
     for cve, libobjs in fixed.items():
         for item in libobjs:
             if type(libobjs[item]) is dict:
@@ -123,9 +123,9 @@ def main():
     deps = loaddeps(depfile)
     notfixed = loadnotfixed(f'{docsdir}/notfixed.json')
     fixed = loadfixed(f'{docsdir}/fixed.json')
-    checkunfixedvulns(deps, notfixed)
     checkfixedvulns(deps, fixed)
-    print(Fore.GREEN + "Done...")
+    checkunfixedvulns(deps, notfixed)
+    print(Fore.WHITE + "Done...")
 
 
 if __name__ == "__main__":
