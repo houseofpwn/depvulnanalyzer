@@ -4,6 +4,11 @@ import sys
 from colorama import Fore
 import re
 
+# This script takes the input from the other scripts in this repo
+# checks the vulnerable libraries against the modules used in the repo repot
+# then outputs fixed-status.json and notfixes-status.json indicating which
+# modules have vulnerabilities.
+
 def loaddeps(depfile):
     print(Fore.YELLOW + "Loading dependencies...")
     try:
