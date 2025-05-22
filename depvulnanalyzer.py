@@ -1,7 +1,5 @@
 import json
 import sys
-from itertools import filterfalse
-from operator import truediv
 
 from colorama import Fore, Back, Style
 import re
@@ -27,12 +25,20 @@ def loadfixed(fixedfile):
         f.close()
     return fixed
 
-def isdepvulnerable(name, vuln, deps):
+def isdepvulnerable(name, vuln, deps, notfixedstatus):
     for dep in deps:
         #print(f'Checking for {name} in {dep}')
         deplist = deps[dep]
         if name in deplist:
-            print(Fore.LIGHTWHITE_EX + "Module ",  Fore.WHITE + dep, Fore.RED + name)
+            status = {
+                "library" : name,
+                "module": dep,
+                "current": deplist[name]
+            }
+            notfixedstatus.append(status)
+            print(Fore.LIGHTWHITE_EX + "Module ",  Fore.WHITE + dep, Fore.RED + name + ' '
+                  + Fore.WHITE + '( ' + Fore.RED + deplist[name] + ' ' + Fore.WHITE + ')')
+    return notfixedstatus
 
 def isbetweenversions(low, high, current):
     #print(Fore.WHITE + f'Checking if {low} < {current} < {high}')
@@ -68,21 +74,13 @@ def isbetweenversions(low, high, current):
             index += 1
         if maxmet:
             failed = True
-            #print(Fore.WHITE + f'[ {low} - {high} ] (', Fore.RED + f'{current}', Fore.WHITE + ')')
         else:
             failed = False
-            #print(Fore.WHITE + f'[ {low} - {high} ] (', Fore.GREEN + f'{current}', Fore.WHITE + ')')
     else:
         failed = False
-        #print(Fore.WHITE + f'[ {low} - {high} ] (', Fore.GREEN + f'{current}', Fore.WHITE + ')')
     return failed
-    #if failed:
-    #    print(Fore.RED + f'{low} <= {current} < {high}')
-    #else:
-    #    print(Fore.GREEN + f'{current} not affected.')
 
-
-def checkdepfixed(name, vuln, deps):
+def checkdepfixed(name, vuln, deps, fixedstatus, docsdir):
     lastname = "xx"
     for dep in deps:
         deplist = deps[dep]
@@ -92,30 +90,48 @@ def checkdepfixed(name, vuln, deps):
             high = vuln["fixed"]
             current = depver
             failed = isbetweenversions(vuln["introduced"], vuln["fixed"], depver)
+            status = {
+                "library" : name,
+                "module": dep,
+                "fixver": high,
+                "current": current
+            }
             if failed:
                 if lastname !=name:
                     print(Fore.WHITE + f'Library {name}')
+                status["vulnerable"] = True
                 print(Fore.WHITE + f'\tModule ' + Fore.LIGHTWHITE_EX + f'{dep} - ' + Fore.YELLOW + f'[ {low} - {high} ] ' + Fore.WHITE + f'(', Fore.RED + f'{current}', Fore.WHITE + ')')
             else:
                 if lastname !=name:
                     print(Fore.WHITE + f'Library {name}')
+                status["vulnerable"] = False
                 print(Fore.WHITE + f'\tModule ' + Fore.LIGHTWHITE_EX + f'{dep} - ' + Fore.YELLOW + f'[ {low} - {high} ] ' + Fore.WHITE + f'(', Fore.GREEN + f'{current}', Fore.WHITE + ')')
+            fixedstatus.append(status)
             lastname = name
 
-def checkunfixedvulns(deps, notfixed):
+    with open(f'{docsdir}/notfixed-status.json', "w+") as f:
+        json.dump(fixedstatus, f, indent=4)
+        f.close()
+
+def checkunfixedvulns(deps, notfixed, docsdir):
     print(Fore.BLUE + "Checking not-fixed vulnerabilities...")
+    notfixedstatus = []
     for cve, libobjs in notfixed.items():
         for item in libobjs:
             if type(libobjs[item]) is dict:
-                isdepvulnerable(item, libobjs[item], deps)
-        #print(f'{cve} ')
+                notfixedstatus = isdepvulnerable(item, libobjs[item], deps, notfixedstatus)
+    with open(f'{docsdir}/fixed-status.json', "w+") as f:
+        json.dump(notfixedstatus, f, indent=4)
+        f.close()
 
-def checkfixedvulns(deps, fixed):
+def checkfixedvulns(deps, fixed, docsdir):
     print(Fore.BLUE + "Checking fixed vulnerabilities...")
+    fixedstatus = []
     for cve, libobjs in fixed.items():
         for item in libobjs:
             if type(libobjs[item]) is dict:
-                checkdepfixed(item, libobjs[item], deps)
+                checkdepfixed(item, libobjs[item], deps, fixedstatus, docsdir)
+    return fixedstatus
 
 def main():
     depfile = sys.argv[1]
@@ -123,10 +139,9 @@ def main():
     deps = loaddeps(depfile)
     notfixed = loadnotfixed(f'{docsdir}/notfixed.json')
     fixed = loadfixed(f'{docsdir}/fixed.json')
-    checkfixedvulns(deps, fixed)
-    checkunfixedvulns(deps, notfixed)
+    checkfixedvulns(deps, fixed, docsdir)
+    checkunfixedvulns(deps, notfixed, docsdir)
     print(Fore.WHITE + "Done...")
-
 
 if __name__ == "__main__":
     main()
